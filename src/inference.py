@@ -1,0 +1,34 @@
+import torch
+
+
+def decode(emoca, values, training=False):
+    with torch.no_grad():
+        values = emoca.decode(values, training=training)
+        # losses = deca.compute_loss(values, training=False)
+        # batch_size = values["expcode"].shape[0]
+        uv_detail_normals = None
+        if 'uv_detail_normals' in values.keys():
+            uv_detail_normals = values['uv_detail_normals']
+        visualizations, grid_image = emoca._visualization_checkpoint(
+            values['verts'],
+            values['trans_verts'],
+            values['ops'],
+            uv_detail_normals,
+            values, 
+            0,
+            "",
+            "",
+            save=False
+        )
+
+    return values, visualizations
+
+
+def test(deca, img, device = "cuda"):
+    img["image"] = img["image"].to(device)
+    deca = deca.to(device)
+    if len(img["image"].shape) == 3:
+        img["image"] = img["image"].view(1,3,224,224)
+    vals = deca.encode(img, training=False)
+    vals, visdict = decode(deca, vals, training=False)
+    return vals, visdict
