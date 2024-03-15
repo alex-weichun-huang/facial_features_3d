@@ -4,5 +4,5 @@ __pycache__/
 *.jpg
 *.png
 *.npy
-main.sh
-run_extraction_image.py
+*.mp4
+main2.py

@@ -1,0 +1,6 @@
+device: "cuda"
+io: 
+  clip_info: "./datasets/dfew.csv"
+  output_folder: "/media/external/ahuang/face_in_the_wild/dfew_feats"
+face_detection:
+  detect: False

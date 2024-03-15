@@ -14,5 +14,6 @@ registered_emotions = {
     "Surprise": 6,
     
     # dataset specific emotions
-    "Ambiguous": 7
+    "Ambiguous": 7,
+    "Contempt": 8,
 }

@@ -1,0 +1,9 @@
+device: "cuda"
+feature:
+  dataset_type: "video"
+  feature_type: "vals"
+io: 
+  clip_info: "./datasets/lsvd.csv"
+  output_folder: "/media/external/ahuang/face_in_the_wild/lsvd_feats"
+face_detection:
+  detect: True

@@ -1,0 +1,6 @@
+device: "cuda"
+io: 
+  clip_info: "./datasets/ferv39k.csv"
+  output_folder: "/media/external/ahuang/face_in_the_wild/ferv39k_feats"
+face_detection:
+  detect: False

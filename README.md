@@ -1,27 +1,23 @@
 # 3D_Face_Feats
 
-Extract "3D Facial Expression Features" from video datasets using SOTA 3D face reconstruction model - EMOCA. 
-The final feature will be in this format for a video:
+Extract 3D Facial Expression Features from video datasets using the state-of-the-art (SOTA) 3D face reconstruction model, EMOCA. For each video, the extracted features are organized as follows:
 
 ```
 feat_file = {
-    "video_path": video_path,
-    "label": label,
+    "video_path": "<path_to_video>",
+    "label": "<emotion_label>",
     "traj": [
-        # trajectory 1
+        # Trajectory 1
         [   
-            # frame 1
+            # Frame 1
             {   
-                'image_path': image_path,
-                'face_exp_feats': face_exp_feats,
-                'frame_ind': frame_ind,
+                'image_path': "<path_to_frame_image>",
+                'face_exp_feats': "<facial_expression_features>",
+                'frame_ind': "<frame_index>",
             },
-            ...
+            # Additional frames...
         ],
-        # trajectory 2
-        [  
-            ...
-        ]
+        # Additional trajectories...
     ],
 }
 ```
@@ -32,11 +28,13 @@ feat_file = {
 
 ## Instructions
 
-1. Generate a CSV file containing (video_path, video_label) on each row. Please refer to the examples under this [folder](examples/) for more information.
-    
-    > **Note:** We recommend mapping labels from individual dataset to the common labels defined [here](examples/common.py) so that it will be easier to merge different datasets.
+1. Prepare a CSV file listing video paths and labels. Each row should contain a video_path and a video_label. Refer to the examples in the [datasets folder](datasets/) for guidance.
 
+    > **Note:** We suggest mapping labels from your dataset to the common labels defined [here](examples/common.py) to simplify dataset integration.
+
+    ```
         registered_emotions = {
+            # common emotions
             "Angry": 0,
             "Disgust": 1,
             "Fear": 2,
@@ -44,27 +42,35 @@ feat_file = {
             "Neutral": 4,
             "Sad": 5,
             "Surprise": 6,
-            "Ambiguous": 7
+            
+            # dataset specific emotions
+            "Ambiguous": 7,
+            "Contempt": 8,
         }
+    ```
 
 
-2. Extract EMOCA features from the videos:
+2. Extract EMOCA features from your videos. Specify the path to your configuration file using the following command:
 
 ```sh
-python run_extraction_video.py --feature_type "vals" --clip_info "./examples/dfew.csv" --output_folder "dfew_feats" --model_name "EMOCA_v2_lr_mse_20    
+python main.py --config cfg/lsvd.yaml
 ```
 
-* (clip_info): The path to the CSV file you generated in Step 1.
+> **Note:** Please check out the full configuration [here](src/config.py). We have only highlighted the more import ones here.
 
-* (dataset_type): Set it to "video" if your dataset contains mp4 files. Set it to "images" if your video dataset contains folders of images.
+* "clip_info": Path to the CSV file created in Step 1.
 
-* (feature_type): Set it to "vis" only if your goal is to get the 3D reconstruction face clips for sanity check/ visualization purpose.
+* "dataset_type": Set to "video" for mp4 files or "images" for datasets with image folders.
 
-    > **Note:** The "vis" feature is way larger than the "vals" feature. We DO NOT recommend extract "vis" features for the entire dataset.
+* "detect": turn on this flag if the faces in your data is not cropped out and will need to run the facial detection model.
 
-* (detect): turn on this flag if the faces in your data is not cropped out and will need to run the facial detection model.
+    > **Note:** If detect is not enabled, it is assumed that faces are pre-cropped for EMOCA. For best practices, consider extracting "vis" features from a subset for visual inspection before processing the entire dataset. See [vis.ipynb](vis.ipynb) for an example
+    . 
 
-    > **Note:** If this flag is not turned on, we assume that the faces are cropped in a way that EMOCA can use. If you are unsure about it, we recommend extracting "vis" feature from some videos and visualize for sanity check before running on the entire dataset. 
+* "feature_type": Choose "vis" as the feature type only for visual validation or inspection purposes.
+
+    > **Note:** "vis" features are significantly larger than "vals" features. Extracting "vis" features for the entire dataset is not recommended.
+
     
 ## Notes on EMOCA features
 
