@@ -52,24 +52,23 @@ feat_file = {
 
 2. Extract EMOCA features from your videos. Specify the path to your configuration file using the following command:
 
-```sh
-python main.py --config cfg/lsvd.yaml
-```
+    ```sh
+    python main.py --config cfg/lsvd.yaml
+    ```
 
-> **Note:** Please check out the full configuration [here](src/config.py). We have only highlighted the more import ones here.
-
-* "clip_info": Path to the CSV file created in Step 1.
-
-* "dataset_type": Set to "video" for mp4 files or "images" for datasets with image folders.
-
-* "detect": turn on this flag if the faces in your data is not cropped out and will need to run the facial detection model.
-
-    > **Note:** If detect is not enabled, it is assumed that faces are pre-cropped for EMOCA. For best practices, consider extracting "vis" features from a subset for visual inspection before processing the entire dataset. See [vis.ipynb](vis.ipynb) for an example
-    . 
-
-* "feature_type": Choose "vis" as the feature type only for visual validation or inspection purposes.
-
-    > **Note:** "vis" features are significantly larger than "vals" features. Extracting "vis" features for the entire dataset is not recommended.
+    > **Note:** Please check out the full configuration [here](src/config.py). We have only highlighted the more import ones here.
+    
+    * "clip_info": Path to the CSV file created in Step 1.
+    
+    * "dataset_type": Set to "video" for mp4 files or "images" for datasets with image folders.
+    
+    * "detect": turn on this flag if the faces in your data is not cropped out and will need to run the facial detection model.
+    
+      > **Note:**     If detect is not enabled, it is assumed that faces are pre-cropped for EMOCA. For best practices, consider extracting "vis" features from a subset for visual inspection before         processing the entire dataset. See [vis.ipynb](vis.ipynb) for an example. 
+    
+    * "feature_type": Choose "vis" as the feature type only for visual validation or inspection purposes.
+    
+      > **Note:**     "vis" features are significantly larger than "vals" features. Extracting "vis" features for the entire dataset is not recommended.
 
     
 ## Notes on EMOCA features
