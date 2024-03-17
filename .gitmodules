@@ -1,0 +1,3 @@
+[submodule "src/pytorch3d"]
+	path = src/pytorch3d
+	url = https://github.com/facebookresearch/pytorch3d.git
