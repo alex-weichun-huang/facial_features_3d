@@ -1,7 +1,9 @@
+import os
+import cv2
 import numpy as np
 from pathlib import Path
 from skimage.io import imsave
-from .utils import torch_img_to_np, fix_image
+from .utils import torch_img_to_np, fix_image, tensor2image, upsample_mesh
 
 
 def write_obj(obj_name,

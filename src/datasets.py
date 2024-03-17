@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from glob import glob
 from skimage.transform import estimate_transform, warp
-from .FAN import FAN
+from .detectors import FAN
 
 
 

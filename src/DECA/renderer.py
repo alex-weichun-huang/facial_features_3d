@@ -5,13 +5,13 @@ import torch.nn.functional as F
 from pytorch3d.io import load_obj
 from pytorch3d.structures import Meshes
 from pytorch3d.renderer.mesh import rasterize_meshes
+
 from .utils import (
     dict2obj,
     generate_triangles,
     face_vertices_,
     vertex_normals,
 )
-
 
 class Pytorch3dRasterizer(nn.Module):
     """

@@ -1,13 +1,3 @@
-echo "Installing packages..."
-python -m pip install -r install/requirements.txt
-python -m pip install Cython==0.29
-python -m pip install git+https://github.com/facebookresearch/pytorch3d.git@v0.6.2
-python -m pip install numpy==1.23.5
-python -m pip install "opencv-python-headless<4.3"
-python -m pip install ipdb
-python -m pip install tokenizers==0.10.3
-echo "Installation finished"
-
 mkdir -p assets 
 cd assets
 
@@ -37,13 +27,11 @@ done
 
 echo "Downloading assets..." 
 
-
 mkdir -p EMOCA/models 
 cd EMOCA/models 
 wget https://download.is.tue.mpg.de/emoca/assets/EMOCA/models/EMOCA.zip -O EMOCA.zip
 unzip EMOCA.zip
 cd ../../
-
 
 mkdir -p EMOCA/models 
 cd EMOCA/models 
@@ -55,19 +43,16 @@ unzip EMOCA_v2_lr_mse_20.zip
 unzip EMOCA_v2_lr_cos_1.5.zip
 cd ../../
 
-
 mkdir -p EMOCA/models 
 cd EMOCA/models 
 wget https://download.is.tue.mpg.de/emoca/assets/EMOCA/models/DECA.zip -O DECA.zip
 unzip DECA.zip
 cd ../../
 
-
 wget https://download.is.tue.mpg.de/emoca/assets/DECA.zip -O DECA.zip
 wget https://download.is.tue.mpg.de/emoca/assets/FaceRecognition.zip -O FaceRecognition.zip
 unzip DECA.zip
 unzip FaceRecognition.zip
-
 
 wget https://download.is.tue.mpg.de/emoca/assets/FLAME.zip -O FLAME.zip
 unzip FLAME.zip

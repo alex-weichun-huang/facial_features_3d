@@ -3,5 +3,5 @@ from .load import *
 from .utils import *
 from .datasets import *
 from .inference import *
-from .FAN import *
+from .detectors import *
 from .config import *

@@ -4,8 +4,6 @@ import torch
 def decode(emoca, values, training=False):
     with torch.no_grad():
         values = emoca.decode(values, training=training)
-        # losses = deca.compute_loss(values, training=False)
-        # batch_size = values["expcode"].shape[0]
         uv_detail_normals = None
         if 'uv_detail_normals' in values.keys():
             uv_detail_normals = values['uv_detail_normals']
