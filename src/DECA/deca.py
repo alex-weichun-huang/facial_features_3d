@@ -11,7 +11,6 @@ from pathlib import Path
 from skimage.io import imread
 from omegaconf import OmegaConf, open_dict
 from pytorch_lightning import LightningModule
-from pytorch_lightning.loggers import WandbLogger
 
 from .loss import IDMRFLoss
 from .flame import FLAME_mediapipe
