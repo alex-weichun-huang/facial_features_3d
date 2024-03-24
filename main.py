@@ -87,11 +87,18 @@ def main_worker(cfg):
                     'frame_ind': img_dict['frame_ind'],
                 }
             else:
-                exp_feat = vals['expcode'][0].detach().cpu()
-                pose_feat = vals['posecode'][0, 3:6].detach().cpu() 
-                detail_feat = vals['detailcode'][0].detach().cpu() 
-                face_exp_feats = torch.cat([pose_feat, exp_feat, detail_feat]).numpy() 
-                assert face_exp_feats.shape == (181,), f'face_exp_feats.shape = {face_exp_feats.shape} instead of (181,)'
+                shape_feat = vals['shapecode'][0].detach().cpu() # 50
+                cam_feat = vals['cam'][0].detach().cpu() # 3
+                tex_feat = vals['texcode'][0].detach().cpu() # 50
+                light_feat = vals['lightcode'][0].detach().cpu().reshape(-1) # 27
+                pose_feat = vals['posecode'][0].detach().cpu() # 6
+                exp_feat = vals['expcode'][0].detach().cpu() # 50
+                detail_feat = vals['detailcode'][0].detach().cpu() # 128
+                face_exp_feats = torch.cat([
+                    shape_feat, cam_feat, tex_feat, light_feat, pose_feat, exp_feat, detail_feat
+                ]).numpy()
+                assert face_exp_feats.shape == (364,), f'face_exp_feats.shape = {face_exp_feats.shape} instead of (364,)'
+                
                 frame_dict = {
                     'image_path': img_dict['image_path'],
                     'face_exp_feats': face_exp_feats,

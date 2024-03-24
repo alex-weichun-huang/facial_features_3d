@@ -1,4 +1,4 @@
-device: "cuda"
+device: "cuda:0"
 io: 
   clip_info: "./datasets/dfew.csv"
   output_folder: "/media/external/ahuang/face_in_the_wild/dfew_feats"

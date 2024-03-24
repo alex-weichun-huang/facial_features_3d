@@ -1,4 +1,4 @@
-device: "cuda"
+device: "cuda:1"
 feature:
   dataset_type: "video"
   feature_type: "vals"
