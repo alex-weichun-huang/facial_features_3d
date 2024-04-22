@@ -80,11 +80,11 @@ def main_worker(cfg):
             if cfg['feature']['feature_type'] == 'vis':
                 frame_dict = {
                     'image_path': img_dict['image_path'],
-                    'output_images_detail': vis['output_images_detail'].detach().cpu(),
-                    'output_images_coarse': vis['output_images_coarse'].detach().cpu(),
-                    'geometry_detail': vis['geometry_detail'].detach().cpu(),
-                    'geometry_coarse': vis['geometry_coarse'].detach().cpu(),
                     'frame_ind': img_dict['frame_ind'],
+                    'geometry_detail': vis['geometry_detail'].detach().cpu(),
+                    # 'geometry_coarse': vis['geometry_coarse'].detach().cpu(),
+                    # 'output_images_detail': vis['output_images_detail'].detach().cpu(),
+                    # 'output_images_coarse': vis['output_images_coarse'].detach().cpu(),
                 }
             else:
                 shape_feat = vals['shapecode'][0].detach().cpu() # 50
