@@ -1,6 +1,9 @@
 device: "cuda:0"
+run_name: dfew
 io: 
   clip_info: "./datasets/dfew.csv"
-  output_folder: "/media/external/ahuang/face_in_the_wild/dfew_feats"
+  output_folder: "/data/alex/fitw/dfew_fau_feats"
 face_detection:
-  detect: False
+  detect: True
+feature:
+  dataset_type: "video"

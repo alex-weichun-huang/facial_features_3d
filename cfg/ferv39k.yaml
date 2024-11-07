@@ -1,6 +1,9 @@
-device: "cuda:1"
+device: "cuda:0"
+run_name: ferv39k
 io: 
   clip_info: "./datasets/ferv39k.csv"
-  output_folder: "/media/external/ahuang/face_in_the_wild/ferv39k_feats"
+  output_folder: "/data/alex/fitw/ferv39k_fau_feats"
 face_detection:
-  detect: False
+  detect: True
+feature:
+  dataset_type: "video"

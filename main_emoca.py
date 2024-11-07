@@ -115,17 +115,6 @@ def main_worker(cfg):
         np.save(os.path.join(cfg['io']['output_folder'], f"{cfg['feature']['feature_type']}_{video_i:05d}.npy"), feat_file)
 
     
-    # save the paths to the images where no face was detected
-    if len(no_face_detected) > 0:
-        print(f"Warning: No face detected in {len(no_face_detected)} images. Saving the paths to {cfg['io']['output_folder']}/no_face_detected.txt")
-        
-        with open(os.path.join(cfg['io']['output_folder'], 'no_face_detected.txt'), 'w') as f:
-            f.write(f"Input folder: {cfg['io']['clip_info']}\n")
-            f.write(f"Output folder: {cfg['io']['output_folder']}\n")
-            for img_path in no_face_detected:
-                f.write(img_path + '\n')
-
-    
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default=None, help='path to the config file')

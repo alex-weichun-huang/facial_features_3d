@@ -1,0 +1,10 @@
+device: "cuda:0"
+run_name: mafw
+io: 
+  clip_info: "./datasets/mafw.csv"
+  output_folder: "/data/alex/fitw/mafw_fau_feats"
+face_detection:
+  detect: True
+  crop_size: 448
+feature:
+  dataset_type: "video"

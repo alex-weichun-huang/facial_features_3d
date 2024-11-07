@@ -1,0 +1,10 @@
+device: "cuda:0"
+run_name: demo
+feature:
+  dataset_type: "video"
+  feature_type: "vis"
+io: 
+  clip_info: "./datasets/demo.csv"
+  output_folder: "."
+face_detection:
+  detect: False

@@ -153,7 +153,12 @@ def upsample_mesh(vertices, normals, faces, displacement_map, texture_map, dense
 
 
 #------------------------------------------------
-
+def save_video(frames, dir_name, filename, fps=10):
+    video = cv2.VideoWriter(os.path.join(dir_name, filename), cv2.VideoWriter_fourcc(*'mp4v'), fps, frames[0].size)
+    for frame in frames:
+        video.write(cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR))
+    video.release()
+    print(f"Video saved to {os.path.join(dir_name, filename)}")
 
 def dict_cuda_to_cpu(d):
     for k, v in d.items():

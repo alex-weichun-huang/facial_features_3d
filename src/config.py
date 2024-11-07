@@ -3,6 +3,7 @@ import yaml
 DEFAULTS = {
     
     "device": "cuda",
+    "run_name": "Test",
     
     "feature":{
         "feature_type": "vals",

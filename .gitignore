@@ -1,3 +1,4 @@
+img/
 data/
 assets/
 __pycache__/
@@ -5,3 +6,4 @@ __pycache__/
 *.png
 *.npy
 *.mp4
+gpu.config.yml
