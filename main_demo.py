@@ -99,7 +99,8 @@ def main_worker(cfg):
             crop_size=cfg['face_detection']['crop_size'],
             device=device,
             iou_treshold=cfg['face_detection']['iou_threshold'],
-            face_detect_thres=cfg['face_detection']['threshold']
+            face_detect_thres=cfg['face_detection']['threshold'],
+            scale=2
         )
       
         traj = [[],]
@@ -116,16 +117,30 @@ def main_worker(cfg):
                 traj.append([])
             
             
-            # get the features for this frame
+            # get emoca image
             emoca = emoca.to(device)
             img_dict["image"] = img_dict["image"].view(1,3,224,224).to(device)
             vals = emoca.encode(img_dict, training=False)
             vals, visdict = decode(emoca, vals, training=False)
             
+            # get facetorch image
+            tensor_to_pil_image(visdict['inputs'].detach().cpu()).save(in_image_path)
+            response = analyzer.run(
+                tensor = in_image_path , 
+                return_img_data=True,
+                include_tensors=True
+            )
+            landmark_image = torchvision.transforms.functional.to_pil_image(response.img)
+            landmark_image.save(out_image_path)
+            
+            # get images 
             frame_dict = {
                 'bbox': img_dict["bbox"], # (center, size)
+                
+                # (ALL in PIL format)
                 'original_image': img_dict["original_image"],
-                'overlay_image': visdict['output_images_detail'].detach().cpu(),
+                'overlay_image': tensor_to_pil_image(visdict['output_images_detail'].detach().cpu()),
+                'landmark_image': landmark_image
             }
         
             traj[-1].append(frame_dict)
@@ -137,28 +152,18 @@ def main_worker(cfg):
         for _traj in traj:
             for i, frame in enumerate(_traj):
                
+                center, size = frame['bbox']
+                
                 # get the input image
-                pil_image = frame['original_image']
-                pil_image.save(in_image_path)
-                input_frames.append(pil_image)
+                input_frames.append(frame['original_image'])
                 
                 # get the overlay image
-                center, size = frame['bbox']
-                pil_image = overlay_image_within_bbox(frame['original_image'], tensor_to_pil_image(frame['overlay_image']), center = center, scale=size/224)
+                pil_image = overlay_image_within_bbox(frame['original_image'], frame['overlay_image'], center=center, scale=size/224)
                 overlay_frames.append(pil_image.convert("RGB"))
                 
-                # get the landmark
-                response = analyzer.run(
-                    tensor = in_image_path , 
-                    return_img_data=True,
-                    include_tensors=True
-                )
-                if len(response.faces) != 1:
-                    print("Warning! More than one face detected!")
-                    continue
-                pil_image = torchvision.transforms.functional.to_pil_image(response.img)
-                pil_image.save(out_image_path)
-                landmark_frames.append(pil_image)
+                # get the landmark image
+                pil_image = overlay_image_within_bbox(frame['original_image'], frame['landmark_image'], center=center, scale=size/224)
+                landmark_frames.append(pil_image.convert("RGB"))
         
         video_name = os.path.basename(video_path)
         fps = cv2.VideoCapture(video_path).get(cv2.CAP_PROP_FPS)
