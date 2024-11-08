@@ -67,31 +67,30 @@ def overlay_image_within_bbox(base_image, overlay_image, center, scale=1.0):
 
 def main_worker(cfg):
     
-
+    # load config
     Path(cfg['io']['output_folder']).mkdir(parents=True, exist_ok=True) 
     with open(cfg['io']['clip_info'], 'r') as f:
         input_videos = f.readlines()
         clip_info = [line.strip().split(',') for line in input_videos]
 
-
+    # set params
     print(f"[Output Dir]: {cfg['io']['output_folder']}")     
     print(f"[TODO]: {len(clip_info)}\n")
+    in_image_path = f"img/in_{cfg['run_name']}.jpg"
+    out_image_path = f"img/out_{cfg['run_name']}.jpg"
     device = cfg['device']
     
+    # load emoca
     emoca, _ = load_model(cfg['emoca']['path_to_models'], cfg['emoca']['model_name'], 'detail')
     emoca.eval().to(device)
     
+    # load facetorch
     os.makedirs("img", exist_ok=True)
     f_cfg = OmegaConf.load("cfg/gpu.config.yml")
     analyzer = FaceAnalyzer(f_cfg.analyzer)
     
-    no_face_detected = []
     for video_i, (video_path, label) in enumerate(tqdm(clip_info)):
-        
-        if os.path.exists(os.path.join(cfg['io']['output_folder'], f"{cfg['feature']['feature_type']}_{video_i:05d}.npy")):
-            print("skipping...")
-            continue
-        
+       
         # load the dataset for this video
         face_dataset = VideoDataset(
             video_path=video_path, 
@@ -103,7 +102,6 @@ def main_worker(cfg):
             face_detect_thres=cfg['face_detection']['threshold']
         )
       
-
         traj = [[],]
         for img_dict in face_dataset:
             
@@ -112,73 +110,55 @@ def main_worker(cfg):
                 if cfg["feature"]['dataset_type'] == 'video':
                     traj.append([])
                     continue
-                elif cfg["feature"]['dataset_type'] == 'images':
-                    no_face_detected.append(img_dict['image_path'])
-                    continue
             
             # handle the case when this is a new trajectory; this is only used for (videos input + detect=True)
             if "new_traj" in img_dict and img_dict["new_traj"] and len(traj[-1]) > 0:
                 traj.append([])
             
-            img_dict["image"] = img_dict["image"].view(1,3,224,224).to(device)
             
             # get the features for this frame
             emoca = emoca.to(device)
+            img_dict["image"] = img_dict["image"].view(1,3,224,224).to(device)
             vals = emoca.encode(img_dict, training=False)
-            
-            # NOTE: this is for removing other factors
-            # identity
-            # vals["shapecode"] = torch.zeros_like(vals["shapecode"]).to(device)
-            # vals["texcode"] = torch.zeros_like(vals["texcode"]).to(device)
-            
-            # camera code
-            # vals["cam"][0][0] = torch.tensor([10]).to(device)
-            # vals["cam"][0][1] = torch.tensor([0.0]).to(device)
-            # vals["cam"][0][2] = torch.tensor([0.0]).to(device)
-            
-            # pose code
-            # vals["posecode"][0][0] = torch.tensor([0]).to(device) # up down
-            # vals["posecode"][0][1] = torch.tensor([0]).to(device) # left right
-            # vals["posecode"][0][2] = torch.tensor([0]).to(device) # clockwise and counter clockwise
-        
             vals, visdict = decode(emoca, vals, training=False)
+            
             frame_dict = {
-                'bbox': img_dict["bbox"],
+                'bbox': img_dict["bbox"], # (center, size)
                 'original_image': img_dict["original_image"],
-                'image': visdict["inputs"].detach().cpu(),
-                'geometry_detail': visdict['geometry_detail'].detach().cpu(),
-                'overlay': visdict['output_images_detail'].detach().cpu(),
+                'overlay_image': visdict['output_images_detail'].detach().cpu(),
             }
         
             traj[-1].append(frame_dict)
         
-        # NOTE: This is if we want to directly save the output as a mp4 file
+        # Save the output as a mp4 file
         input_frames = []
         overlay_frames = []
         landmark_frames = []
         for _traj in traj:
             for i, frame in enumerate(_traj):
+               
+                # get the input image
                 pil_image = frame['original_image']
+                pil_image.save(in_image_path)
                 input_frames.append(pil_image)
                 
-                # center, size = frame['bbox']
-                pil_image = overlay_image_within_bbox(frame['original_image'], tensor_to_pil_image(frame['overlay']), center = center, scale=size /224)
+                # get the overlay image
+                center, size = frame['bbox']
+                pil_image = overlay_image_within_bbox(frame['original_image'], tensor_to_pil_image(frame['overlay_image']), center = center, scale=size/224)
                 overlay_frames.append(pil_image.convert("RGB"))
                 
-                in_image_path = f"img/in_{cfg['run_name']}.jpg"
-                out_image_path = f"img/out_{cfg['run_name']}.jpg"
-                img_dict['image'].save(in_image_path)
+                # get the landmark
                 response = analyzer.run(
                     tensor = in_image_path , 
                     return_img_data=True,
                     include_tensors=True
                 )
                 if len(response.faces) != 1:
+                    print("Warning! More than one face detected!")
                     continue
-                
                 pil_image = torchvision.transforms.functional.to_pil_image(response.img)
                 pil_image.save(out_image_path)
-                landmark_frames.append(pil_image.convert("RGB"))
+                landmark_frames.append(pil_image)
         
         video_name = os.path.basename(video_path)
         fps = cv2.VideoCapture(video_path).get(cv2.CAP_PROP_FPS)

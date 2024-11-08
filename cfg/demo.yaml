@@ -7,4 +7,4 @@ io:
   clip_info: "./datasets/demo.csv"
   output_folder: "."
 face_detection:
-  detect: False
+  detect: True
