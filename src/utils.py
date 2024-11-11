@@ -160,6 +160,37 @@ def save_video(frames, dir_name, filename, fps=10):
     video.release()
     print(f"Video saved to {os.path.join(dir_name, filename)}")
 
+def create_horizontal_clip(frame_lists, filename, fps=10):
+    # Ensure all frame lists have the same number of frames
+    num_frames = min(len(lst) for lst in frame_lists)
+    frame_width, frame_height = frame_lists[0][0].size  # Assume all frames have the same dimensions
+    
+    # Define the width and height for the combined frame (1x3 layout)
+    combined_width = frame_width * 3
+    combined_height = frame_height
+
+    # Prepare the video writer (adjust fps and output path as needed)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(filename, fourcc, fps, (combined_width, combined_height))
+
+    # Process each frame and write it to the video
+    for i in range(num_frames):
+        # Stack frames horizontally
+        frames = [frame_lists[j][i] for j in range(3)]
+        combined_frame = Image.new("RGB", (combined_width, combined_height))
+        
+        # Paste each frame into the combined frame
+        for j, frame in enumerate(frames):
+            combined_frame.paste(frame, (j * frame_width, 0))
+        
+        # Convert to OpenCV format and write to video
+        cv2_frame = cv2.cvtColor(np.array(combined_frame), cv2.COLOR_RGB2BGR)
+        out.write(cv2_frame)
+    
+    # Release the video writer
+    out.release()
+    print("Video saved as output_video.mp4")
+
 def dict_cuda_to_cpu(d):
     for k, v in d.items():
         if isinstance(v, dict):

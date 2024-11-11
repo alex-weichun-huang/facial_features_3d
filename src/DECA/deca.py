@@ -1276,21 +1276,23 @@ class DecaModule(LightningModule):
                     grid = grid.detach()
                 predicted_detailed_image = F.grid_sample(uv_texture, grid, align_corners=False)
                 if self.deca.config.background_from_input in [True, "input"]:
+                    alpha = 0.125
                     if images.shape[-1] != predicted_images.shape[-1] or images.shape[-2] != predicted_images.shape[-2]:
                         ## special case only for inference time if the rendering image sizes have been changed
                         # images_resized = F.interpolate(images, size=predicted_images.shape[-2:], mode='bilinear')
                         ## before bugfix
                         # predicted_images = (1. - masks) * images_resized + masks * predicted_images
                         ## after bugfix
-                        predicted_detailed_image = (1. - masks) * images_resized + masks * predicted_detailed_image
+                        predicted_detailed_image = (1. - masks) * images_resized + masks * images_resized * alpha  + masks * predicted_detailed_image * (1-alpha) 
                     else:
-                        predicted_detailed_image = (1. - masks) * images + masks * predicted_detailed_image
+                        predicted_detailed_image = (1. - masks) * images  + masks * images *alpha + masks * predicted_detailed_image * (1-alpha) 
                 elif self.deca.config.background_from_input in [False, "black"]:
                     predicted_detailed_image = masks * predicted_detailed_image
                 elif self.deca.config.background_from_input in ["none"]:
                     predicted_detailed_image = predicted_detailed_image
                 else:
                     raise ValueError(f"Invalid type of background modification {self.deca.config.background_from_input}")
+
 
 
                 # --- extract texture

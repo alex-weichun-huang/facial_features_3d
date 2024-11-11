@@ -10,6 +10,7 @@ import torchvision
 from PIL import Image
 from tqdm import tqdm
 from pathlib import Path
+import torch
 
 # facetorch
 from omegaconf import OmegaConf
@@ -22,8 +23,10 @@ from src import (
     VideoDataset,
     load_config,
     save_video,
+    create_horizontal_clip,
     tensor_to_pil_image,
 )
+
 
 def overlay_image_within_bbox(base_image, overlay_image, center, scale=1.0):
     """
@@ -104,6 +107,9 @@ def main_worker(cfg):
         )
       
         traj = [[],]
+        left_frames = []
+        right_frames = []
+        front_frames = []
         for img_dict in face_dataset:
             
             # handle the case when there is no face detected in this frame
@@ -120,8 +126,41 @@ def main_worker(cfg):
             # get emoca image
             emoca = emoca.to(device)
             img_dict["image"] = img_dict["image"].view(1,3,224,224).to(device)
-            vals = emoca.encode(img_dict, training=False)
-            vals, visdict = decode(emoca, vals, training=False)
+            origin_vals = emoca.encode(img_dict, training=False)
+            _, visdict = decode(emoca, origin_vals, training=False)
+            left_vals = origin_vals.copy()
+            right_vals = origin_vals.copy()
+            front_vals = origin_vals.copy()
+
+            left_vals["cam"][0][0] = torch.tensor([8]).to(device) # near far
+            left_vals["cam"][0][1] = torch.tensor([-0.02]).to(device) 
+            left_vals["cam"][0][2] = torch.tensor([0.0]).to(device)  
+            
+            # pose code
+            left_vals["posecode"][0][0] = torch.tensor([0]).to(device) # up down
+            left_vals["posecode"][0][1] = torch.tensor([0.5]).to(device) # left right
+            left_vals["posecode"][0][2] = torch.tensor([0]).to(device) # clockwise and counter clockwise
+            left_vals, left_visdict = decode(emoca, left_vals, training=False)
+
+            # right
+            right_vals["cam"][0][0] = torch.tensor([8]).to(device) # near far
+            right_vals["cam"][0][1] = torch.tensor([0.02]).to(device)
+            right_vals["cam"][0][2] = torch.tensor([0.0]).to(device)
+
+            right_vals["posecode"][0][0] = torch.tensor([0]).to(device) # up down
+            right_vals["posecode"][0][1] = torch.tensor([-0.5]).to(device) # left right
+            right_vals["posecode"][0][2] = torch.tensor([0]).to(device) # clockwise and counter clockwise
+            right_vals, right_visdict = decode(emoca, right_vals, training=False)
+
+            # front
+            front_vals["cam"][0][0] = torch.tensor([8]).to(device) # near far
+            front_vals["cam"][0][1] = torch.tensor([0.0]).to(device)
+            front_vals["cam"][0][2] = torch.tensor([0.0]).to(device)
+
+            front_vals["posecode"][0][0] = torch.tensor([0]).to(device) # up down
+            front_vals["posecode"][0][1] = torch.tensor([0.0]).to(device) # left right
+            front_vals["posecode"][0][2] = torch.tensor([0]).to(device) # clockwise and counter clockwise
+            front_vals, front_visdict = decode(emoca, front_vals, training=False)
             
             # get facetorch image
             tensor_to_pil_image(visdict['inputs'].detach().cpu()).save(in_image_path)
@@ -144,6 +183,9 @@ def main_worker(cfg):
             }
         
             traj[-1].append(frame_dict)
+            left_frames.append(tensor_to_pil_image(left_visdict['geometry_detail'].detach().cpu()))
+            right_frames.append(tensor_to_pil_image(right_visdict['geometry_detail'].detach().cpu()))
+            front_frames.append(tensor_to_pil_image(front_visdict['geometry_detail'].detach().cpu()))
         
         # Save the output as a mp4 file
         input_frames = []
@@ -164,12 +206,11 @@ def main_worker(cfg):
                 # get the landmark image
                 pil_image = overlay_image_within_bbox(frame['original_image'], frame['landmark_image'], center=center, scale=size/224)
                 landmark_frames.append(pil_image.convert("RGB"))
-        
+
         video_name = os.path.basename(video_path)
         fps = cv2.VideoCapture(video_path).get(cv2.CAP_PROP_FPS)
-        save_video(input_frames, cfg['io']['output_folder'], f"input_{video_name}", fps=fps)
-        save_video(overlay_frames, cfg['io']['output_folder'], f"overlay_{video_name}", fps=fps)
-        save_video(landmark_frames, cfg['io']['output_folder'], f"landmark_{video_name}", fps=fps)
+        create_horizontal_clip([input_frames, landmark_frames, overlay_frames], f"lmk_{video_name}", fps)
+        create_horizontal_clip([front_frames, left_frames, right_frames], f"mesh_{video_name}", fps)
 
     
 def parse_args():
