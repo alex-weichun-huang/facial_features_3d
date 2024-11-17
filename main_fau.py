@@ -46,7 +46,8 @@ def main_worker(cfg):
             crop_size=cfg['face_detection']['crop_size'],
             device=cfg['device'],
             iou_treshold=cfg['face_detection']['iou_threshold'],
-            face_detect_thres=cfg['face_detection']['threshold']
+            face_detect_thres=cfg['face_detection']['threshold'],
+            scale=2
         )
         
         traj = [[],]

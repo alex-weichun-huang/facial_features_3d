@@ -261,7 +261,7 @@ class VideoPILDataset(torch.utils.data.IterableDataset):
     Handle Face Detection and Cropping for videos
     """
     
-    def __init__(self, video_path, downsample_rate=1, detect=True, crop_size=224, device="cuda", iou_treshold=0.5, face_detect_thres=0.5):
+    def __init__(self, video_path, downsample_rate=1, detect=True, crop_size=224, device="cuda", iou_treshold=0.5, face_detect_thres=0.5, scale=1.25):
         '''
             video_path: folder, image_list, image path, video path
         '''
@@ -272,7 +272,7 @@ class VideoPILDataset(torch.utils.data.IterableDataset):
         
         self.detect = detect
         self.crop_size = crop_size
-        self.scale = 1.25 # EMOCA uses 1.25
+        self.scale = scale # EMOCA uses 1.25
         self.iou_threshold = iou_treshold
         self.face_detect_thres = face_detect_thres
         if self.detect:
