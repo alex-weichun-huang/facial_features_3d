@@ -582,6 +582,7 @@ class DecaModule(LightningModule):
             pass
         else:
             self.emotion_mlp = None
+        
 
     def get_input_image_size(self): 
         return (self.deca.config.image_size, self.deca.config.image_size)

@@ -135,11 +135,11 @@ class VideoDataset(torch.utils.data.IterableDataset):
             old_size = (right - left + bottom - top)/2*1.1
             center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0 ])
         elif type=='bbox':
-            old_size = (right - left + bottom - top)/2
+            old_size = (right - left + bottom - top)/2.0
             center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0  + old_size*0.12])
         else:
             raise NotImplementedError
-        return int(old_size*scale), center
+        return old_size*scale, center
 
     
     def iou(self, pre_box, boxes):
@@ -218,15 +218,28 @@ class VideoDataset(torch.utils.data.IterableDataset):
                 size, center = self.bbox2point(left, right, top, bottom, type=bbox_type, scale=self.scale)
                 
                 # Crop face
-                src_pts = np.array([[center[0]-size/2, center[1]-size/2], [center[0] - size/2, center[1]+size/2], [center[0]+size/2, center[1]-size/2]])
-                dst_pts = np.array([[0,0], [0,self.crop_size - 1], [self.crop_size - 1, 0]])
-                tform = estimate_transform('similarity', src_pts, dst_pts)
-                face_image = warp(og_img_tensor.numpy(), tform.inverse, output_shape=(self.crop_size, self.crop_size))
-                face_image = (face_image * 255).astype(np.uint8)
-                pil_image = Image.fromarray(face_image)
+                # src_pts = np.array([[center[0]-size/2.0, center[1]-size/2], [center[0] - size/2.0, center[1]+size/2.0], [center[0]+size/2.0, center[1]-size/2.0]])
+                # dst_pts = np.array([[0,0], [0,self.crop_size - 1], [self.crop_size - 1, 0]])
+                # tform = estimate_transform('similarity', src_pts, dst_pts)
+                # face_image = warp(og_img_tensor.numpy(), tform.inverse, output_shape=(self.crop_size, self.crop_size))
+                # face_image = (face_image * 255).astype(np.uint8)
+                # pil_image = Image.fromarray(face_image)
+                center_x, center_y = center
+                crop_left = center_x - size / 2.0
+                crop_top = center_y - size / 2.0
+                crop_right = center_x + size / 2.0
+                crop_bottom = center_y + size / 2.0
+
+                # Perform cropping with integer coordinates
+                cropped_image = og_pil_image.crop((int(crop_left), int(crop_top), int(crop_right), int(crop_bottom)))
+                # size of the cropped region
+                crop_width, crop_height = cropped_image.size
+
+                # Resize the cropped region to the desired size
+                cropped_image = cropped_image.resize((224, 224), Image.LANCZOS)
 
             # Convert to tensor
-            img_tensor = torch.from_numpy(np.array(pil_image)) 
+            img_tensor = torch.from_numpy(np.array(cropped_image)) 
             img_tensor = img_tensor.permute(2, 0, 1) 
             img_tensor = img_tensor.float() / 255
             img_tensor = torch.nn.functional.interpolate(img_tensor.unsqueeze(0), size=224, mode='bilinear', align_corners=True).squeeze(0)
@@ -238,6 +251,8 @@ class VideoDataset(torch.utils.data.IterableDataset):
                 'image_path': f"{self.video_path}_frame_{index}.jpg",
                 'frame_ind': index,
                 'new_traj': new_traj,
+                'left_top': (int(crop_left), int(crop_top)),
+                'cropped_size': (crop_width, crop_height),
             }
         self.cap.release()
 
