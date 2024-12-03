@@ -255,6 +255,11 @@ class SRenderY(nn.Module):
             lights = torch.cat((light_positions, light_intensities), 2).to(vertices.device)
         transformed_vertices[:, :, 2] = transformed_vertices[:, :, 2] + 10
 
+         # Upsample transformed_vertices and other related attributes
+        scale_factor = 2
+        transformed_vertices = F.interpolate(transformed_vertices.permute(0, 2, 1).unsqueeze(3), scale_factor=scale_factor, mode='bilinear', align_corners=False).squeeze(3).permute(0, 2, 1)
+        vertices = F.interpolate(vertices.permute(0, 2, 1).unsqueeze(3), scale_factor=scale_factor, mode='bilinear', align_corners=False).squeeze(3).permute(0, 2, 1)
+
         # Attributes
         face_vertices = face_vertices_(vertices, self.faces.expand(batch_size, -1, -1))
         normals = vertex_normals(vertices, self.faces.expand(batch_size, -1, -1));

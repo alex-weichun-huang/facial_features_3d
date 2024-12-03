@@ -1147,6 +1147,7 @@ class DecaModule(LightningModule):
             landmarks2d_mediapipe = None
         else:
             verts, landmarks2d, landmarks3d, landmarks2d_mediapipe = self.deca.flame(shapecode, expcode, posecode)
+        # TODO add kalman filter to verts, landmarks2d here instead of the cam
         # world to camera
         trans_verts = batch_orth_proj(verts, cam)
         predicted_landmarks = batch_orth_proj(landmarks2d, cam)[:, :, :2]
@@ -1506,6 +1507,7 @@ class DecaModule(LightningModule):
         visind = np.arange(batch_size)
         shape_images = self.deca.render.render_shape(verts, trans_verts)
         if uv_detail_normals is not None:
+            # TODO upsample verts and transverts 
             detail_normal_images = F.grid_sample(uv_detail_normals.detach(), ops['grid'].detach(),
                                                  align_corners=False)
             shape_detail_images = self.deca.render.render_shape(verts, trans_verts,

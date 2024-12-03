@@ -7,6 +7,7 @@ def decode(emoca, values, training=False):
         uv_detail_normals = None
         if 'uv_detail_normals' in values.keys():
             uv_detail_normals = values['uv_detail_normals']
+        # load template and pass it to the visualization function
         visualizations, grid_image = emoca._visualization_checkpoint(
             values['verts'],
             values['trans_verts'],

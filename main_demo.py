@@ -11,7 +11,6 @@ from PIL import Image, ImageDraw
 from tqdm import tqdm
 from pathlib import Path
 import torch
-from filterpy.kalman import KalmanFilter
 
 # facetorch
 from omegaconf import OmegaConf
@@ -64,23 +63,6 @@ def overlay_image_within_bbox(base_image, overlay_image, left_top=None, cropped_
 
     return combined_image
 
-def init_kalman_filter_cam():
-    # Initialize Kalman filter for the camera code
-    kf = KalmanFilter(dim_x=6, dim_z=3)
-    kf.x = np.zeros(6)  # Initial state (position and velocity)
-    kf.F = np.array([[1, 0, 0, 1, 0, 0],
-                     [0, 1, 0, 0, 1, 0],
-                     [0, 0, 1, 0, 0, 1],
-                     [0, 0, 0, 1, 0, 0],
-                     [0, 0, 0, 0, 1, 0],
-                     [0, 0, 0, 0, 0, 1]])  # State transition matrix
-    kf.H = np.array([[1, 0, 0, 0, 0, 0],
-                     [0, 1, 0, 0, 0, 0],
-                     [0, 0, 1, 0, 0, 0]])  # Measurement function
-    kf.P *= 1  # Initial covariance matrix
-    kf.R = np.eye(3) * 10  # Measurement noise
-    kf.Q = np.eye(6) * 0.1  # Process noise
-    return kf
 
 def moving_average(vals, window_size):
     smoothed_vals = []
@@ -168,16 +150,10 @@ def main_worker(cfg):
         # decode the smoothed values and save the output as a video
         window_size = 3 
         smoothed_vals = moving_average(encoded_vals, window_size)
-        kf = init_kalman_filter_cam()
         for i, (vals, left_top, cropped_size, ori_img) in enumerate(zip(smoothed_vals, left_tops, cropped_sizes, original_images)):
             left_vals = vals.copy()
             right_vals = vals.copy()
             front_vals = vals.copy()
-            if i == 0:
-                kf.x[:3] = vals['cam'].cpu().numpy()
-            kf.predict()
-            kf.update(vals['cam'].cpu().numpy())
-            vals['cam'] = torch.tensor(kf.x[:3].astype(np.float32)).to(device).view(1, 3)
             _, visdict = decode(emoca, vals, training=False)
 
             input_image = tensor_to_pil_image(visdict['inputs'].detach().cpu())
