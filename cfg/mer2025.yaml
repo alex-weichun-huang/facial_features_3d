@@ -1,0 +1,10 @@
+device: "cuda:0"
+run_name: demo
+feature:
+  dataset_type: "video"
+  feature_type: "emoca"
+io: 
+  output_folder: "./mer2025_output"
+  shard_path: "/dataset/MER2025/video/test_shard/mer-{000000..000001}.tar"
+face_detection:
+  detect: True

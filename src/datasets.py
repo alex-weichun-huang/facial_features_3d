@@ -1,5 +1,7 @@
+import io
 import os
 import cv2
+import av
 import math
 import torch
 import numpy as np
@@ -402,3 +404,109 @@ class VideoPILDataset(torch.utils.data.IterableDataset):
             }
         self.cap.release()
  
+class VideoBytesDataset(torch.utils.data.IterableDataset):
+    """
+    Handle Face Detection and Cropping for videos loaded from in-memory bytes using PyAV
+    """
+
+    def __init__(self, video_bytes, downsample_rate=1, detect=True, crop_size=224, device="cuda", iou_treshold=0.5, face_detect_thres=0.5):
+        self.device = device
+        self.downsample_rate = downsample_rate
+        self.detect = detect
+        self.crop_size = crop_size
+        self.scale = 1.25
+        self.iou_threshold = iou_treshold
+        self.face_detect_thres = face_detect_thres
+        if self.detect:
+            self.face_detector = FAN(self.device, threshold=face_detect_thres)
+
+        self.container = av.open(io.BytesIO(video_bytes))
+        self.stream = self.container.streams.video[0]
+        self.prev_box = None
+
+    def bbox2point(self, left, right, top, bottom, type='bbox', scale=1.25):
+        if type == 'kpt68':
+            old_size = (right - left + bottom - top) / 2 * 1.1
+            center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0])
+        elif type == 'bbox':
+            old_size = (right - left + bottom - top) / 2
+            center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0 + old_size * 0.12])
+        else:
+            raise NotImplementedError
+        return int(old_size * scale), center
+
+    def iou(self, pre_box, boxes):
+        x1 = np.maximum(pre_box[0], boxes[:, 0])
+        y1 = np.maximum(pre_box[1], boxes[:, 1])
+        x2 = np.minimum(pre_box[2], boxes[:, 2])
+        y2 = np.minimum(pre_box[3], boxes[:, 3])
+        intersection_area = np.maximum(x2 - x1, 0) * np.maximum(y2 - y1, 0)
+        pre_box_area = (pre_box[2] - pre_box[0]) * (pre_box[3] - pre_box[1])
+        boxes_area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+        union_area = pre_box_area + boxes_area - intersection_area
+        return intersection_area / union_area
+
+    def __iter__(self):
+        index = 0
+        for frame in self.container.decode(self.stream):
+            index += 1
+            if index % self.downsample_rate != 0:
+                continue
+
+            new_traj = False
+            frame_img = frame.to_ndarray(format="bgr24")
+            pil_image = Image.fromarray(cv2.cvtColor(frame_img, cv2.COLOR_BGR2RGB))
+
+            if not self.detect:
+                bbox = [0, 0, frame_img.shape[1], frame_img.shape[0]]
+                self.prev_box = bbox
+            else:
+                img_tensor = torch.from_numpy(np.array(pil_image))
+                bboxes, bbox_type = self.face_detector.run(img_tensor)
+
+                if len(bboxes) == 0:
+                    self.prev_box = None
+                    yield {
+                        'image_path': f"in_memory_frame_{index}.jpg",
+                        'frame_ind': index,
+                        'new_traj': True,
+                    }
+                    continue
+
+                if self.prev_box is not None:
+                    ious = self.iou(self.prev_box, np.array(bboxes))
+                    best_match = np.argmax(ious)
+                    if ious[best_match] >= self.iou_threshold:
+                        bbox = bboxes[best_match]
+                        self.prev_box = bbox
+                    else:
+                        bbox = bboxes[0]
+                        new_traj = True
+                        self.prev_box = bbox
+                else:
+                    bbox = bboxes[0]
+                    new_traj = True
+                    self.prev_box = bbox
+
+                left, top, right, bottom = bbox
+                size, center = self.bbox2point(left, right, top, bottom, type=bbox_type, scale=self.scale)
+                src_pts = np.array([[center[0]-size/2, center[1]-size/2], [center[0]-size/2, center[1]+size/2], [center[0]+size/2, center[1]-size/2]])
+                dst_pts = np.array([[0, 0], [0, self.crop_size - 1], [self.crop_size - 1, 0]])
+                tform = estimate_transform('similarity', src_pts, dst_pts)
+                face_image = warp(img_tensor.numpy(), tform.inverse, output_shape=(self.crop_size, self.crop_size))
+                face_image = (face_image * 255).astype(np.uint8)
+                pil_image = Image.fromarray(face_image)
+
+            img_tensor = torch.from_numpy(np.array(pil_image))
+            img_tensor = img_tensor.permute(2, 0, 1).float() / 255
+            img_tensor = torch.nn.functional.interpolate(img_tensor.unsqueeze(0), size=224, mode='bilinear', align_corners=True).squeeze(0)
+
+            yield {
+                'bbox': [center, size],
+                'original_image': pil_image,
+                'image': img_tensor,
+                'image_path': f"in_memory_frame_{index}.jpg",
+                'frame_ind': index,
+                'new_traj': new_traj,
+                'cropped_size': img_tensor.shape[1:]
+            }

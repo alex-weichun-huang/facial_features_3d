@@ -48,6 +48,6 @@ def load_config(config_file, defaults=DEFAULTS):
     with open(config_file, "r") as fd:
         config = yaml.load(fd, Loader=yaml.FullLoader)
     _merge(defaults, config)
-    if config['io']['output_folder'] == None or config['io']['clip_info'] == None:
+    if config['io']['output_folder'] == None:
         raise ValueError('Please specify the output folder and the path to the clip info file.')
     return config
