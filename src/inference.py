@@ -31,3 +31,10 @@ def test(deca, img, device = "cuda"):
     vals = deca.encode(img, training=False)
     vals, visdict = decode(deca, vals, training=False)
     return vals, visdict
+
+def batch_test(deca, batch_imgs, device = "cuda"):
+    img_dict = {"image":batch_imgs} # required by the deca encode model
+    deca = deca.to(device)
+    vals = deca.encode(img_dict, training=False)
+    vals, visdict = decode(deca, vals, training=False)
+    return vals, visdict

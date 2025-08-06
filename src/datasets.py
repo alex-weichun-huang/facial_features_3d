@@ -9,6 +9,8 @@ from PIL import Image
 from glob import glob
 from skimage.transform import estimate_transform, warp
 from .detectors import FAN
+from torchvision import transforms
+from torchvision.transforms.functional import to_pil_image
 
 
 
@@ -510,3 +512,50 @@ class VideoBytesDataset(torch.utils.data.IterableDataset):
                 'new_traj': new_traj,
                 'cropped_size': img_tensor.shape[1:]
             }
+
+class OpenFaceDataset(torch.utils.data.Dataset):
+    def __init__(self, arr, resize_to=224):
+        self.frames = arr.astype(np.uint8)
+        self.resize_to = resize_to
+
+        self.tensor_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((resize_to, resize_to)),
+            transforms.ToTensor(),  # (HWC) -> (CHW), float [0,1]
+        ])
+        self.pil_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((resize_to, resize_to)),
+        ])
+
+    def __len__(self):
+        return self.frames.shape[0]
+
+    def __getitem__(self, idx):
+        img = self.frames[idx]
+        img_tensor = self.tensor_transform(img)  # (3, 224, 224)
+        brightness = get_brightness_from_tensor(img_tensor, dim=10)  # Calculate brightness
+        return {
+            "image": img_tensor,
+            "brightness": brightness,
+            "frame_ind": idx,
+        }
+
+def get_brightness_from_tensor(tensor_img, dim=10):
+    """
+    Computes brightness score from a torch tensor image.
+    - tensor_img: (C, H, W) torch tensor (float in [0,1] or uint8)
+    """
+    # Convert tensor to PIL
+    pil_image = to_pil_image(tensor_img)
+    
+    # Convert PIL to OpenCV format
+    image = np.array(pil_image.convert("RGB"))  # RGB
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    image = cv2.resize(image, (dim, dim))
+    
+    # Convert to LAB and extract L (luminance) channel
+    L, _, _ = cv2.split(cv2.cvtColor(image, cv2.COLOR_BGR2LAB))
+    score = np.mean(L)
+    return score
+
