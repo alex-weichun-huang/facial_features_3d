@@ -514,9 +514,10 @@ class VideoBytesDataset(torch.utils.data.IterableDataset):
             }
 
 class OpenFaceDataset(torch.utils.data.Dataset):
-    def __init__(self, arr, resize_to=224):
+    def __init__(self, arr, resize_to=224, scale=1.25):
         self.frames = arr.astype(np.uint8)
         self.resize_to = resize_to
+        self.scale = scale
 
         self.tensor_transform = transforms.Compose([
             transforms.ToPILImage(),
@@ -533,29 +534,32 @@ class OpenFaceDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         img = self.frames[idx]
+        brightness = get_brightness_from_bgr_np_img(img) 
+
+        # convert to RGB
+        img = img[..., ::-1]  # OpenFace uses BGR, convert to RGB
+        h, w, _ = img.shape
+        size = int(max(h, w) * self.scale)
+        padded = np.zeros((size, size, 3), dtype=np.uint8)
+        offset_y = (size - h) // 2
+        offset_x = (size - w) // 2
+        padded[offset_y:offset_y + h, offset_x:offset_x + w] = img
+        img = padded
         img_tensor = self.tensor_transform(img)  # (3, 224, 224)
-        brightness = get_brightness_from_tensor(img_tensor, dim=10)  # Calculate brightness
         return {
             "image": img_tensor,
             "brightness": brightness,
             "frame_ind": idx,
         }
 
-def get_brightness_from_tensor(tensor_img, dim=10):
-    """
-    Computes brightness score from a torch tensor image.
-    - tensor_img: (C, H, W) torch tensor (float in [0,1] or uint8)
-    """
-    # Convert tensor to PIL
-    pil_image = to_pil_image(tensor_img)
-    
-    # Convert PIL to OpenCV format
-    image = np.array(pil_image.convert("RGB"))  # RGB
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-    image = cv2.resize(image, (dim, dim))
-    
-    # Convert to LAB and extract L (luminance) channel
-    L, _, _ = cv2.split(cv2.cvtColor(image, cv2.COLOR_BGR2LAB))
-    score = np.mean(L)
+def get_brightness_from_bgr_np_img(img):
+
+    lab_image = cv2.cvtColor(img, cv2.COLOR_BGR2Lab)
+    l_channel = lab_image[:, :, 0]
+    non_zero_pixels = np.any(img != 0, axis=-1)
+    non_zero_l_channel = l_channel[non_zero_pixels]
+    if non_zero_l_channel.size == 0:
+        return 0.0
+    score = np.mean(non_zero_l_channel) / 255.0  # Normalize to
     return score
 

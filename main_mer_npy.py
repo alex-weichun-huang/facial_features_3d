@@ -52,7 +52,7 @@ def main_worker(cfg):
             shuffle=False
         )
 
-        traj = [[],]
+        traj = []
         for batch in face_loader:
             bs = len(batch['image'])
             
@@ -85,17 +85,15 @@ def main_worker(cfg):
                     'frame_ind': frame_inds[i].item(),
                     'pose_score': pose_score,
                     'brightness': brightnesses[i].item(),
+                    'geometry_detail': vis['geometry_detail'][i].detach().cpu(),
+                    'image_detail': vis['output_images_detail'][i].detach().cpu(),
                 }
+                traj.append(frame_dict)
 
-            traj[-1].append(frame_dict)
 
         
         # save the result for this video
-        feat_file = {
-            'video_name': video_key,
-            'traj': traj,
-        }
-        np.save(os.path.join(cfg['io']['output_folder'], f"{cfg['feature']['feature_type']}_{video_i:06d}.npy"), feat_file)
+        np.save(os.path.join(cfg['io']['output_folder'], f"{cfg['feature']['feature_type']}_{video_key}.npy"), traj)
 
     
 def parse_args():
