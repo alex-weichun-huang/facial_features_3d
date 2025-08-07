@@ -28,7 +28,7 @@ def main_worker(cfg):
 
     Path(cfg['io']['output_folder']).mkdir(parents=True, exist_ok=True) 
 
-
+    print(f"[Input Dir]: {cfg['io']['shard_path']}")
     print(f"[Output Dir]: {cfg['io']['output_folder']}")     
     
     
@@ -85,8 +85,8 @@ def main_worker(cfg):
                     'frame_ind': frame_inds[i].item(),
                     'pose_score': pose_score,
                     'brightness': brightnesses[i].item(),
-                    'geometry_detail': vis['geometry_detail'][i].detach().cpu(),
-                    'image_detail': vis['output_images_detail'][i].detach().cpu(),
+                    #'geometry_detail': vis['geometry_detail'][i].detach().cpu(),
+                    #'image_detail': vis['output_images_detail'][i].detach().cpu(),
                 }
                 traj.append(frame_dict)
 
@@ -99,8 +99,13 @@ def main_worker(cfg):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default=None, help='path to the config file')
+    parser.add_argument('--shard_path', type=str, default=None, help='path to the shard')
     args = parser.parse_args()
     cfg = load_config(args.config)
+    if args.shard_path:
+        data_path = os.path.expandvars("${DATA_PATH}")
+        shard_path = os.path.join(data_path, args.shard_path)
+        cfg['io']['shard_path'] = shard_path 
     return cfg
     
     

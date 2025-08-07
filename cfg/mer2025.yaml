@@ -3,7 +3,7 @@ run_name: demo
 feature:
   dataset_type: "openFace"
   feature_type: "emoca"
-  batch_size: 16
+  batch_size: 128
 io: 
-  output_folder: "./openFace_emoca"
-  shard_path: "/workspace/data/shard-000.tar"
+  output_folder: "${DATA_PATH}/openFace_emoca"
+  shard_path: "${DATA_PATH}/shard-000.tar"

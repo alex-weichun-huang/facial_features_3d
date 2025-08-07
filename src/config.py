@@ -1,4 +1,5 @@
 import yaml
+import os
 
 DEFAULTS = {
     
@@ -48,6 +49,8 @@ def load_config(config_file, defaults=DEFAULTS):
     with open(config_file, "r") as fd:
         config = yaml.load(fd, Loader=yaml.FullLoader)
     _merge(defaults, config)
+    config['io']['output_folder'] = os.path.expandvars(config['io']['output_folder'])
+    config['io']['shard_path'] = os.path.expandvars(config['io']['shard_path'])
     if config['io']['output_folder'] == None:
         raise ValueError('Please specify the output folder and the path to the clip info file.')
     return config

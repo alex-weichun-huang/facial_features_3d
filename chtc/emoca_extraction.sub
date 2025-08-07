@@ -1,0 +1,32 @@
+# Software build file
+
+container_image = docker://zzhu415/fitw:v2
+universe = container
+arguments = --config cfg/mer2025.yaml --shard_path $(SHARD)
+
+# In the latest version of HTCondor on CHTC, interactive jobs require an executable.
+# If you do not have an existing executable, use a generic linux command like hostname as shown below.
+executable = ./run.sh 
+
+# log 
+log = logs/job_$(SHARD).log
+error = logs/job_$(SHARD).err
+output = logs/job_$(SHARD).out
+
+
+# change the name of the file to be the name of your source code
+transfer_input_files = osdf:///chtc/staging/zzhu362/npy_shards/$(SHARD)
+
+# +IsBuildJob = true
+# requirements = (OpSysMajorVer =?= 8)
+request_cpus = 2
+request_memory = 5GB
+request_disk = 5GB
+
+
++WantGPULab = true
++GPUJobLength = "short" 
+request_gpus = 1
+gpus_minimum_memory = 20G
+
+queue SHARD from failed_shards.txt
